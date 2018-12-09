@@ -1,0 +1,239 @@
+commonfields:
+  id: 8981b776-f28a-4b17-8441-eb9f7100eb7f
+  version: 8
+name: ParseEmailFiles_copy
+script: |-
+  import re
+  import sys
+  import json
+  from base64 import b64decode
+  from email import message_from_string
+  from email.header import decode_header
+  from email.parser import HeaderParser
+  from subprocess import Popen, PIPE
+
+  reload(sys)
+  sys.setdefaultencoding('utf8')
+
+
+  REGEX_EXTRACT_EMAIL = '<([^>]*)>'
+  ENCODINGS_TYPES = set(['utf-8', 'iso8859-1'])
+
+  def extractAddress(s):
+      if type(s) not in [str, unicode]:
+          return s
+      res = re.findall(REGEX_EXTRACT_EMAIL, s)
+      if res:
+          return ', '.join(res)
+      else:
+          return s
+
+
+  def dataToMD(emailData):
+      md = "### Results:\n"
+
+      md += "* {0}:\t{1}\n".format('From', emailData['From'])
+      md += "* {0}:\t{1}\n".format('To',emailData['To'])
+      md += "* {0}:\t{1}\n".format('CC', emailData['CC'])
+      md += u"* {0}:\t{1}\n".format('Subject', emailData['Subject'])
+      if emailData['Text']:
+          md += u"* {0}:\t{1}\n".format('Body/Text', emailData['Text'])
+      if emailData['HTML']:
+          md += u"* {0}:\t{1}\n".format('Body/HTML', emailData['HTML'])
+      md += "* {0}:\t{1}\n".format('Attachments', emailData['Attachments'])
+      md += "* {0}:\t{1}\n".format('Headers', emailData['Headers'])
+      return md
+
+
+  def getUtfString(text, field):
+      if text is None:
+        text = ''
+      try:
+          utfString = text.encode('utf-8')
+      except Exception as ex:
+          utfString = text.decode('utf-8','ignore').encode('utf-8')
+          temp = demisto.uniqueFile()
+          with open(demisto.investigation()['id'] + '_' + temp,'wb') as f:
+              f.write(text)
+          demisto.results({'Contents': str(ex) + '\n\nOpen HEX viewer to review.', 'ContentsFormat': formats['text'], 'Type': entryTypes['file'], 'File': field, 'FileID': temp})
+
+      return utfString
+
+
+  def convert_to_unicode(s):
+      global ENCODINGS_TYPES
+      try:
+          encoded_s, encoding = decode_header(s)[0]
+          s = encoded_s.decode(encoding).encode('utf-8').strip()
+          ENCODINGS_TYPES.add(encoding)
+      except Exception:
+          for encoding in ENCODINGS_TYPES:
+              try:
+                  s = s.decode(encoding).encode('utf-8').strip()
+                  break
+              except:
+                  pass
+
+      return s
+
+
+  def getFileData(filePath):
+      data = None
+      with open(filePath, 'rb') as f:
+          data =f.read()
+      return data
+
+
+  def handleMsg(filePath):
+      proc = Popen(['python', 'main.py', filePath], stdout=PIPE, stderr=PIPE)
+      stdout, stderr = proc.communicate()
+
+      lines = stdout.split('\n')
+      emailData = json.loads(lines[0])
+      files = json.loads(lines[1])
+      errors = json.loads(stderr.split('\n')[0])
+
+      attachments = [x for x in files if x['Description'] == 'Attachment']
+      attachmentEntries = {fileResult(a['Name'], getFileData(a['Path'])) for a in attachments}
+
+      return emailData, attachmentEntries, errors
+
+
+  def handleEml(filePath, b64=False):
+      global ENCODINGS_TYPES
+      r = []
+      with open(filePath, 'rb') as emlFile:
+          fileData = emlFile.read()
+          if b64:
+              fileData = b64decode(fileData)
+
+          parser = HeaderParser()
+          headers = parser.parsestr(fileData)
+
+          header_list = []
+          for item in headers.items():
+              item_dict = {}
+              item_dict['name'] = item[0]
+              item_dict['value'] = convert_to_unicode(item[1])
+
+              header_list.append(item_dict)
+
+          eml = message_from_string(fileData)
+          if not eml:
+              r += [{"Type": entryTypes["error"], "ContentsFormat": formats["text"], "Contents": "Could not parse eml file!"}]
+          html = ''
+          text = ''
+          attachments = []
+
+          parts = [eml]
+          while parts:
+              part = parts.pop()
+              if part.is_multipart() or part.get_content_type().startswith('multipart'):
+                  parts += part.get_payload()
+              elif part.get_filename():
+                  file_name = convert_to_unicode(part.get_filename())
+                  attachments.append(file_name)
+                  demisto.setContext('AttachmentName', file_name)
+                  r.append(fileResult(file_name, part.get_payload(decode=True)))
+              elif part.get_content_type() == 'text/html':
+                  html = getUtfString(part.get_payload(decode=True), 'HTML')
+              elif part.get_content_type() == 'text/plain':
+                  text = getUtfString(part.get_payload(decode=True), 'TEXT')
+
+          emailData = {
+              'To': extractAddress(eml['To']),
+              'CC': extractAddress(eml['Cc']),
+              'From': extractAddress(eml['From']),
+              'Subject': convert_to_unicode(eml['Subject']),
+              'HTML': convert_to_unicode(html),
+              'Text': convert_to_unicode(text),
+              'Headers': header_list,
+              'Attachments': '' if not attachments else ','.join(attachments),
+              'Format': eml.get_content_type()
+          }
+
+          return r, [{'ContentsFormat': formats['markdown'], 'Type': entryTypes['note'], 'Contents': dataToMD(emailData),
+              'EntryContext': {'Email': emailData}}]
+
+
+  res = []
+  fileType = ''
+  try:
+      fileType = demisto.executeCommand('getEntry', {'id': demisto.args()['entryid']})[0]['FileMetadata']['info']
+      filePath = demisto.executeCommand('getFilePath', {'id': demisto.args()['entryid']})[0]['Contents']['path']
+  except Exception, ex:
+      res += [{"Type": entryTypes["error"], "ContentsFormat": formats["text"], "Contents": str(ex)}]
+
+  if 'Composite Document File V2 Document'.lower() in fileType.lower() or 'CDFV2 Microsoft Outlook Message'.lower() in fileType.lower():
+      temp1, temp2 = handleMsg(filePath)
+      res += temp1
+      res += temp2
+  elif 'rfc 822 mail' in fileType.lower():
+      temp1, temp2 = handleEml(filePath)
+      res += temp1
+      res += temp2
+  elif 'ASCII text' in fileType:
+      try:
+          # Try to open the email as-is
+          with open(filePath, 'rb') as f:
+              filecontents = f.read()
+          if 'Content-Type:'.lower() in filecontents.lower():
+              temp1, temp2 = handleEml(filePath, b64 = False)
+              res += temp1
+              res += temp2
+          else:
+              # Try a base64 decode
+              decodedBase64 = b64decode(filecontents)
+              if 'Content-Type:'.lower() in filecontents.lower():
+                  temp1, temp2 = handleEml(filePath, b64 = True)
+                  res += temp1
+                  res += temp2
+              else:
+                  res += [{"Type": entryTypes["error"], "ContentsFormat": formats["text"], "Contents": "Could not extract email from file. Base64 decode did not include rfc 822 strings"}]
+      except Exception as e:
+          res += [{"Type": entryTypes["error"], "ContentsFormat": formats["text"], "Contents": "Exception while trying to decode email from within base64: " + str(e)}]
+  else:
+      res += [{"Type": entryTypes["error"], "ContentsFormat": formats["text"], "Contents": "Unknown file format: " + fileType}]
+
+  demisto.results(res if res else 'Done.')
+type: python
+tags:
+- email
+- phishing
+- enhancement
+- file
+comment: Parse an email from an eml or msg file and populate all relevant context
+  data to investigate the email. Also extracts inner attachments and returns them
+  to the war room. The incident labels themselves are preserved and not modified -
+  only the "Label/x" context items that originated from the labels, and the best practice
+  is to rely on these for the remainder of the playbook. Requires pip and access to
+  python repository to install "olefile" package.
+enabled: true
+args:
+- name: entryid
+  required: true
+  default: true
+  description: Entry ID with the Email as a file in msg or eml format
+outputs:
+- contextPath: Email.To
+  description: Email 'to' addresses
+- contextPath: Email.CC
+  description: Email 'cc' addresses
+- contextPath: Email.From
+  description: Email 'from' sender
+- contextPath: Email.Subject
+  description: Email subject
+- contextPath: Email.HTML
+  description: Email 'html' body if exists
+- contextPath: Email.Text
+  description: Email 'text' body if exists
+- contextPath: Email.Headers
+  description: The full email headers as a single string
+- contextPath: Email.Attachments
+  description: The list of attachment names in the email
+- contextPath: Email.Format
+  description: The format of the email if available
+scripttarget: 0
+runonce: false
+dockerimage: demisto/py-mailparser
+runas: DBotWeakRole
