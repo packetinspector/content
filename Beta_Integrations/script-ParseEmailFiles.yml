@@ -275,3 +275,5 @@ scripttarget: 0
 runonce: true
 dockerimage: demisto/py-mailparser
 runas: DBotWeakRole
+tests:
+  - No test - script in beta
