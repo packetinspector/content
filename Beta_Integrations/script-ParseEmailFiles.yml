@@ -29,22 +29,6 @@ script: |-
           return s
 
 
-  def dataToMD(emailData):
-      md = "### Results:\n"
-
-      md += "* {0}:\t{1}\n".format('From', emailData['From'])
-      md += "* {0}:\t{1}\n".format('To',emailData['To'])
-      md += "* {0}:\t{1}\n".format('CC', emailData['CC'])
-      md += u"* {0}:\t{1}\n".format('Subject', emailData['Subject'])
-      if emailData['Text']:
-          md += u"* {0}:\t{1}\n".format('Body/Text', emailData['Text'])
-      if emailData['HTML']:
-          md += u"* {0}:\t{1}\n".format('Body/HTML', emailData['HTML'])
-      md += "* {0}:\t{1}\n".format('Attachments', emailData['Attachments'])
-      md += "* {0}:\t{1}\n".format('Headers', emailData['Headers'])
-      return md
-
-
   def getUtfString(text, field):
       if text is None:
         text = ''
@@ -150,7 +134,10 @@ script: |-
                           email = item.get_payload()
                           file_name =  email[0]['Subject'] + ".eml"
                           attachments.append(file_name)
-                          r.append(fileResult(file_name, str(email[0])))
+                          data = str(email[0])
+                          if data.startswith('From '):
+                              data = '\n'.join(data.split('\n')[1:])
+                          r.append(fileResult(file_name, data))
                       else:
                           parts.append(item)
               elif part.get_filename():
@@ -176,7 +163,7 @@ script: |-
           }
           demisto.setContext('AttachmentName', attachments)
 
-          return r, [{'ContentsFormat': formats['markdown'], 'Type': entryTypes['note'], 'Contents': dataToMD(emailData),
+          return r, [{'ContentsFormat': formats['markdown'], 'Type': entryTypes['note'], 'Contents': tableToMarkdown('Results', emailData),
               'EntryContext': {'Email': emailData}}]
 
 
