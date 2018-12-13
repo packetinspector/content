@@ -1,6 +1,6 @@
 commonfields:
-  id: 8981b776-f28a-4b17-8441-eb9f7100eb7f
-  version: 8
+  id: ParseEmailFiles_copy
+  version: -1
 name: ParseEmailFiles_copy
 script: |-
   import re
@@ -85,18 +85,35 @@ script: |-
 
 
   def handleMsg(filePath):
-      proc = Popen(['python', 'main.py', filePath], stdout=PIPE, stderr=PIPE)
+      proc = Popen(['/parse.sh', filePath], stdout=PIPE, stderr=PIPE)
       stdout, stderr = proc.communicate()
 
+      if stderr not in ['\n', '', None]:
+          return_error(stderr)
+
       lines = stdout.split('\n')
-      emailData = json.loads(lines[0])
-      files = json.loads(lines[1])
-      errors = json.loads(stderr.split('\n')[0])
+      folder = lines[0] + '/'
 
-      attachments = [x for x in files if x['Description'] == 'Attachment']
-      attachmentEntries = {fileResult(a['Name'], getFileData(a['Path'])) for a in attachments}
+      emailData = {}
+      with open(folder + 'message.json', 'rb') as fp:
+          demisto.results(fp.read())
+          sys.exit()
+          emailData = json.load(fp)
 
-      return emailData, attachmentEntries, errors
+      emailData = {k.title(): v for k, v in emailData.iteritems()}
+
+      files = [x for x in lines[1:-1] if x != 'message.json']
+      attachmentEntries = []
+      for f in files:
+          with open(folder + f, 'rb') as fo:
+              attachmentEntries.append(fileResult(f, fo.read()))
+
+      emailEntry = []
+      if emailData:
+          emailEntry = [{'ContentsFormat': formats['markdown'], 'Type': entryTypes['note'], 'Contents': tableToMarkdown('Results', emailData),
+              'EntryContext': {'Email': emailData}}]
+
+      return emailEntry, attachmentEntries
 
 
   def handleEml(filePath, b64=False):
@@ -124,12 +141,20 @@ script: |-
           html = ''
           text = ''
           attachments = []
-
           parts = [eml]
+
           while parts:
               part = parts.pop()
               if part.is_multipart() or part.get_content_type().startswith('multipart'):
-                  parts += part.get_payload()
+                  attached_eml = part.get_payload()
+                  for item in attached_eml:
+                      if item.get_content_type() == "message/rfc822":
+                          email = item.get_payload()
+                          file_name =  email[0]['Subject'] + ".eml"
+                          attachments.append(file_name)
+                          r.append(fileResult(file_name, str(email[0])))
+                      else:
+                          parts.append(item)
               elif part.get_filename():
                   file_name = convert_to_unicode(part.get_filename())
                   attachments.append(file_name)
@@ -151,6 +176,7 @@ script: |-
               'Attachments': '' if not attachments else ','.join(attachments),
               'Format': eml.get_content_type()
           }
+          demisto.setContext('AttachmentName', attachments)
 
           return r, [{'ContentsFormat': formats['markdown'], 'Type': entryTypes['note'], 'Contents': dataToMD(emailData),
               'EntryContext': {'Email': emailData}}]
@@ -165,9 +191,8 @@ script: |-
       res += [{"Type": entryTypes["error"], "ContentsFormat": formats["text"], "Contents": str(ex)}]
 
   if 'Composite Document File V2 Document'.lower() in fileType.lower() or 'CDFV2 Microsoft Outlook Message'.lower() in fileType.lower():
-      temp1, temp2 = handleMsg(filePath)
-      res += temp1
-      res += temp2
+      for e in handleMsg(filePath):
+          res += e
   elif 'rfc 822 mail' in fileType.lower():
       temp1, temp2 = handleEml(filePath)
       res += temp1
