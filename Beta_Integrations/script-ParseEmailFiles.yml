@@ -96,8 +96,6 @@ script: |-
 
       emailData = {}
       with open(folder + 'message.json', 'rb') as fp:
-          demisto.results(fp.read())
-          sys.exit()
           emailData = json.load(fp)
 
       emailData = {k.title(): v for k, v in emailData.iteritems()}
