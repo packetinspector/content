@@ -29,6 +29,22 @@ script: |-
           return s
 
 
+  def dataToMD(emailData):
+      md = "### Results:\n"
+
+      md += "* {0}:\t{1}\n".format('From', emailData['From'])
+      md += "* {0}:\t{1}\n".format('To',emailData['To'])
+      md += "* {0}:\t{1}\n".format('CC', emailData['CC'])
+      md += u"* {0}:\t{1}\n".format('Subject', emailData['Subject'])
+      if emailData['Text']:
+          md += u"* {0}:\t{1}\n".format('Body/Text', emailData['Text'])
+      if emailData['HTML']:
+          md += u"* {0}:\t{1}\n".format('Body/HTML', emailData['HTML'])
+      md += "* {0}:\t{1}\n".format('Attachments', emailData['Attachments'])
+      md += "* {0}:\t{1}\n".format('Headers', emailData['Headers'])
+      return md
+
+
   def getUtfString(text, field):
       if text is None:
         text = ''
@@ -45,6 +61,8 @@ script: |-
 
 
   def convert_to_unicode(s):
+      if not s:
+          return s
       global ENCODINGS_TYPES
       try:
           encoded_s, encoding = decode_header(s)[0]
@@ -82,8 +100,6 @@ script: |-
       with open(folder + 'message.json', 'rb') as fp:
           emailData = json.load(fp)
 
-      emailData = {k.title(): v for k, v in emailData.iteritems()}
-
       files = [x for x in lines[1:-1] if x != 'message.json']
       attachmentEntries = []
       for f in files:
@@ -92,7 +108,18 @@ script: |-
 
       emailEntry = []
       if emailData:
-          emailEntry = [{'ContentsFormat': formats['markdown'], 'Type': entryTypes['note'], 'Contents': tableToMarkdown('Results', emailData),
+          attachments = '' if not emailData['Attachments'] else emailData['Attachments']
+          emailData = {
+              'To': extractAddress(emailData['To']),
+              'CC': extractAddress(emailData['CC']),
+              'From': extractAddress(emailData['From']),
+              'Subject': convert_to_unicode(emailData['Subject']),
+              'HTML': emailData['Body'],
+              'Text': emailData['Body'],
+              'Headers': emailData['Headers'],
+              'Attachments': ','.join(attachments) if isinstance(attachments, list) else attachments,
+          }
+          emailEntry = [{'ContentsFormat': formats['markdown'], 'Type': entryTypes['note'], 'Contents': dataToMD(emailData),
               'EntryContext': {'Email': emailData}}]
 
       return emailEntry, attachmentEntries
@@ -163,7 +190,7 @@ script: |-
           }
           demisto.setContext('AttachmentName', attachments)
 
-          return r, [{'ContentsFormat': formats['markdown'], 'Type': entryTypes['note'], 'Contents': tableToMarkdown('Results', emailData),
+          return r, [{'ContentsFormat': formats['markdown'], 'Type': entryTypes['note'], 'Contents': dataToMD(emailData),
               'EntryContext': {'Email': emailData}}]
 
 
@@ -176,8 +203,9 @@ script: |-
       res += [{"Type": entryTypes["error"], "ContentsFormat": formats["text"], "Contents": str(ex)}]
 
   if 'Composite Document File V2 Document'.lower() in fileType.lower() or 'CDFV2 Microsoft Outlook Message'.lower() in fileType.lower():
-      for e in handleMsg(filePath):
-          res += e
+      temp1, temp2 = handleMsg(filePath)
+      res += temp1
+      res += temp2
   elif 'rfc 822 mail' in fileType.lower():
       temp1, temp2 = handleEml(filePath)
       res += temp1
