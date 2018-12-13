@@ -1,7 +1,7 @@
 commonfields:
-  id: ParseEmailFiles_copy
+  id: ParseEmailFiles_new
   version: -1
-name: ParseEmailFiles_copy
+name: ParseEmailFiles_new
 script: |-
   import re
   import sys
@@ -257,6 +257,6 @@ outputs:
 - contextPath: Email.Format
   description: The format of the email if available
 scripttarget: 0
-runonce: false
+runonce: true
 dockerimage: demisto/py-mailparser
 runas: DBotWeakRole
