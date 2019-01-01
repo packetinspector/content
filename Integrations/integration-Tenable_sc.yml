@@ -195,12 +195,12 @@ script:
         headers = ['ID','Name','Description','Policy','Group','Owner']
 
         mapped_scans = [{
-            'Name': s['name'],
-            'ID': s['id'],
-            'Description': s['description'],
-            'Policy': s['policy'].get('name'),
-            'Group': s['ownerGroup'].get('name'),
-            'Owner': s['owner'].get('username')
+            'Name': s.get('name'),
+            'ID': s.get('id'),
+            'Description': s.get('description'),
+            'Policy': s.get('policy', {}).get('name'),
+            'Group': s.get('ownerGroup', {}).get('name'),
+            'Owner': s.get('owner', {}).get('username')
             } for s in scans_dicts]
 
         demisto.results({
@@ -244,14 +244,14 @@ script:
         headers = ['ID','Name','Description','Tag','Type','Group','Owner','LastModified']
 
         mapped_policies = [{
-            'ID': p['id'],
-            'Name': p['name'],
-            'Description': p['description'],
-            'Tag': p['tags'],
-            'Type': p['policyTemplate'].get('name'),
-            'Group': p['ownerGroup'].get('name'),
-            'Owner': p['owner'].get('username'),
-            'LastModified': datetime.utcfromtimestamp(int(p['modifiedTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if p['modifiedTime'] else ''
+            'ID': p.get('id'),
+            'Name': p.get('name'),
+            'Description': p.get('description'),
+            'Tag': p.get('tags'),
+            'Type': p.get('policyTemplate', {}).get('name'),
+            'Group': p.get('ownerGroup', {}).get('name'),
+            'Owner': p.get('owner', {}).get('username'),
+            'LastModified': datetime.utcfromtimestamp(int(p['modifiedTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if p.get('modifiedTime') else ''
         } for p in policies]
 
         demisto.results({
@@ -331,14 +331,14 @@ script:
         headers = ['ID','Name','Description','Type','Tag','Group','Owner','LastModified']
 
         mapped_credentials = [{
-            'ID': c['id'],
-            'Name': c['name'],
-            'Description': c['description'],
-            'Type': c['type'],
-            'Tag': c['tags'],
+            'ID': c.get('id'),
+            'Name': c.get('name'),
+            'Description': c.get('description'),
+            'Type': c.get('type'),
+            'Tag': c.get('tags'),
             'Group': c.get('ownerGroup', {}).get('name'),
             'Owner': c.get('owner', {}).get('name'),
-            'LastModified': datetime.utcfromtimestamp(int(c['modifiedTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if c['modifiedTime'] else ''
+            'LastModified': datetime.utcfromtimestamp(int(c['modifiedTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if c.get('modifiedTime') else ''
         } for c in credentials]
 
         demisto.results({
@@ -380,14 +380,14 @@ script:
         headers = ['ID','Name','Tag','Owner','Group','Type','HostCount','LastModified']
 
         mapped_assets = [{
-            'ID': a['id'],
-            'Name': a['name'],
-            'Tag': a['tags'],
+            'ID': a.get('id'),
+            'Name': a.get('name'),
+            'Tag': a.get('tags'),
             'Owner': a.get('owner', {}).get('username'),
-            'Type': a['type'],
+            'Type': a.get('type'),
             'Group': a.get('ownerGroup', {}).get('name'),
-            'HostCount': a['ipCount'],
-            'LastModified': datetime.utcfromtimestamp(int(a['modifiedTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if a['modifiedTime'] else ''
+            'HostCount': a.get('ipCount'),
+            'LastModified': datetime.utcfromtimestamp(int(a['modifiedTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if a.get('modifiedTime') else ''
         } for a in assets]
 
         demisto.results({
@@ -436,12 +436,12 @@ script:
         headers = ['ID', 'Name', 'Description', 'Tag', 'Created', 'Modified', 'Owner', 'Group', 'IPs']
 
         mapped_asset = {
-            'ID': asset['id'],
-            'Name': asset['name'],
-            'Description': asset['description'],
-            'Tag': asset['tags'],
-            'Created': datetime.utcfromtimestamp(int(asset['createdTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if asset['createdTime'] else '',
-            'Modified': datetime.utcfromtimestamp(int(asset['modifiedTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if asset['modifiedTime'] else '',
+            'ID': asset.get('id'),
+            'Name': asset.get('name'),
+            'Description': asset.get('description'),
+            'Tag': asset.get('tags'),
+            'Created': datetime.utcfromtimestamp(int(asset['createdTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if asset.get('createdTime') else '',
+            'Modified': datetime.utcfromtimestamp(int(asset['modifiedTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if asset.get('modifiedTime') else '',
             'Owner': asset.get('owner', {}).get('username'),
             'Group': asset.get('ownerGroup', {}).get('name'),
             'IPs': ips
@@ -484,18 +484,13 @@ script:
         asset = res['response']
 
         mapped_asset = {
-            'ID': asset['id'],
-            'Name': asset['name'],
-            'OwnerName': asset['owner'].get('username'),
-            'Tags': asset['tags'],
+            'ID': asset.get('id'),
+            'Name': asset.get('name'),
+            'OwnerName': asset.get('owner', {}).get('username'),
+            'Tags': asset.get('tags'),
         }
 
-        headers = [
-        'ID',
-        'Name',
-        'OwnerName',
-        'Tags'
-        ]
+        headers = ['ID','Name','OwnerName','Tags']
 
         demisto.results({
             'Type': entryTypes['note'],
@@ -571,10 +566,10 @@ script:
         headers = ['ID','Name','Description','Type','Group','Owner']
 
         mapped_reports = [{
-            'ID': r['id'],
-            'Name': r['name'],
-            'Description': r['description'],
-            'Type': r['type'],
+            'ID': r.get('id'),
+            'Name': r.get('name'),
+            'Description': r.get('description'),
+            'Type': r.get('type'),
             'Group': r.get('ownerGroup', {}).get('name'),
             'Owner': r.get('owner', {}).get('username')
         } for r in reports]
@@ -627,11 +622,11 @@ script:
         headers = ['ID','Name','Description','IPList','ActiveScanners']
 
         mapped_zones = [{
-            'ID': z['id'],
-            'Name': z['name'],
-            'Description': z['description'],
-            'IPList': z['ipList'],
-            'ActiveScanners': z['activeScanners']
+            'ID': z.get('id'),
+            'Name': z.get('name'),
+            'Description': z.get('description'),
+            'IPList': z.get('ipList'),
+            'ActiveScanners': z.get('activeScanners')
         } for z in zones]
 
         demisto.results({
@@ -694,24 +689,16 @@ script:
 
         scan = res['response']
 
-        headers = [
-            'ID',
-            'CreatorID',
-            'Name',
-            'Type',
-            'CreationTime',
-            'OwnerName',
-            'Reports'
-        ]
+        headers = ['ID','CreatorID','Name','Type','CreationTime','OwnerName','Reports']
 
         mapped_scan = {
-            'ID': scan['id'],
-            'CreatorID': scan['creator'].get('id'),
-            'Name': scan['name'],
-            'Type': scan['type'],
-            'CreationTime': datetime.utcfromtimestamp(int(scan['createdTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if scan['createdTime'] else '',
-            'OwnerName': scan['owner'].get('name'),
-            'Reports': demisto.dt(scan['reports'], 'id')
+            'ID': scan.get('id'),
+            'CreatorID': scan.get('creator', {}).get('id'),
+            'Name': scan.get('name'),
+            'Type': scan.get('type'),
+            'CreationTime': datetime.utcfromtimestamp(int(scan['createdTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if scan.get('createdTime') else '',
+            'OwnerName': scan.get('owner', {}).get('name'),
+            'Reports': demisto.dt(scan.get('reports', {}), 'id')
         }
 
         demisto.results({
@@ -775,7 +762,7 @@ script:
                 manageable = True if asset_ids == 'AllManageable' else False
                 res = get_assets(None)
                 assets = get_elements(res['response'], manageable)
-                asset_ids = list(map(lambda a: a['id'], assets))
+                asset_ids = list(map(lambda a: a.get('id'), assets))
             body['assets'] = [{'id' : a_id} for a_id in argToList(asset_ids)]
 
         if credentials:
@@ -813,20 +800,14 @@ script:
 
         scan_result = res['response']['scanResult']
 
-        headers = [
-            'Name',
-            'ID',
-            'OwnerID',
-            'JobID',
-            'Status'
-        ]
+        headers = ['Name','ID','OwnerID','JobID','Status']
 
         mapped_scan = {
-            'Name': scan_result['name'],
-            'ID': scan_result['id'],
-            'OwnerID': scan_result['ownerID'],
-            'JobID': scan_result['jobID'],
-            'Status': scan_result['status']
+            'Name': scan_result.get('name'),
+            'ID': scan_result.get('id'),
+            'OwnerID': scan_result.get('ownerID'),
+            'JobID': scan_result.get('jobID'),
+            'Status': scan_result.get('status')
         }
 
         demisto.results({
@@ -866,10 +847,10 @@ script:
         headers = ['ID','Name','Status','Description']
 
         mapped_scans_results = [{
-            'ID': scan_result['id'],
-            'Name': scan_result['name'],
-            'Status': scan_result['status'],
-            'Description': scan_result['description']
+            'ID': scan_result.get('id'),
+            'Name': scan_result.get('name'),
+            'Status': scan_result.get('status'),
+            'Description': scan_result.get('description')
         } for scan_result in scans_results]
 
         demisto.results({
@@ -904,21 +885,21 @@ script:
         vuln_headers = ['ID','Name','Family','Severity','Total']
 
         mapped_results = {
-            'ID': scan_results['id'],
-            'Name': scan_results['name'],
-            'Status': scan_results['status'],
-            'Description': scan_results['description'],
-            'Policy': scan_results['details'],
+            'ID': scan_results.get('id'),
+            'Name': scan_results.get('name'),
+            'Status': scan_results.get('status'),
+            'Description': scan_results.get('description'),
+            'Policy': scan_results.get('details'),
             'Group': scan_results.get('ownerGroup', {}).get('name'),
-            'Status': scan_results['status'],
-            'Checks': scan_results['completedChecks'],
-            'StartTime': datetime.utcfromtimestamp(int(scan_results['startTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if scan_results['startTime'] else '',
-            'EndTime': datetime.utcfromtimestamp(int(scan_results['finishTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if scan_results['finishTime'] else '',
-            'Duration': float(scan_results['scanDuration']) / 60 if scan_results['scanDuration'] else '',
-            'ImportTime': datetime.utcfromtimestamp(int(scan_results['importStart'])).strftime('%Y-%m-%dT%H:%M:%SZ') if scan_results['importStart'] else '',
-            'ScannedIPs': scan_results['scannedIPs'],
-            'Owner': scan_results['owner'].get('username'),
-            'RepositoryName': scan_results['repository'].get('name')
+            'Status': scan_results.get('status'),
+            'Checks': scan_results.get('completedChecks'),
+            'StartTime': datetime.utcfromtimestamp(int(scan_results['startTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if scan_results.get('startTime') else '',
+            'EndTime': datetime.utcfromtimestamp(int(scan_results['finishTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if scan_results.get('finishTime') else '',
+            'Duration': float(scan_results['scanDuration']) / 60 if scan_results.get('scanDuration') else '',
+            'ImportTime': datetime.utcfromtimestamp(int(scan_results['importStart'])).strftime('%Y-%m-%dT%H:%M:%SZ') if scan_results.get('importStart') else '',
+            'ScannedIPs': scan_results.get('scannedIPs'),
+            'Owner': scan_results.get('owner', {}).get('username'),
+            'RepositoryName': scan_results.get('repository', {}).get('name')
         }
 
         hr = tableToMarkdown('Tenable.sc Scan ' + mapped_results['ID'] + ' Report', mapped_results, headers, removeNull=True)
@@ -970,11 +951,11 @@ script:
 
         headers = ['ID','Name','Type','Description','Family']
         mapped_plugins = [{
-            'ID': p['id'],
-            'Name': p['name'],
-            'Type': p['type'],
-            'Description': p['description'],
-            'Family': p['family'].get('name')
+            'ID': p.get('id'),
+            'Name': p.get('name'),
+            'Type': p.get('type'),
+            'Description': p.get('description'),
+            'Family': p.get('family', {}).get('name')
         } for p in plugins]
 
         demisto.results({
@@ -1029,23 +1010,17 @@ script:
 
         for vuln in results:
             mapped_vuln =  {
-                'ID': vuln['pluginID'],
-                'Name': vuln['name'],
-                'Description': vuln['pluginDescription'],
-                'Family': vuln['family'].get('name'),
-                'Severity': vuln['severity'].get('name'),
-                'Total': vuln['total']
+                'ID': vuln.get('pluginID'),
+                'Name': vuln.get('name'),
+                'Description': vuln.get('pluginDescription'),
+                'Family': vuln.get('family', {}).get('name'),
+                'Severity': vuln.get('severity', {}).get('name'),
+                'Total': vuln.get('total')
             }
 
             mapped_vulns.append(mapped_vuln)
 
-        sv = [
-          'Critical',
-          'High',
-          'Medium',
-          'Low',
-          'Info'
-        ]
+        sv = ['Critical','High','Medium','Low','Info']
 
         mapped_vulns.sort(key=lambda r: r['Severity'], cmp=lambda a,b: sv.index(a) - sv.index(b))
 
@@ -1114,12 +1089,12 @@ script:
 
         vuln = vuln_response['response']
 
-        vuln['severity'] = results[0]['severity']
-        vuln['hosts'] = results[0]['hosts']
+        vuln['severity'] = results[0].get('severity')
+        vuln['hosts'] = results[0].get('hosts')
 
-        vuln_hosts = vuln['hosts']
-        severity = vuln['severity'].get('name')
-        hosts = [{'IP': h['ip'], 'MAC': h['macAddress']} for h in demisto.dt(vuln_hosts, 'iplist')]
+        vuln_hosts = vuln.get('hosts')
+        severity = vuln.get('severity', {}).get('name')
+        hosts = [{'IP': h.get('ip'), 'MAC': h.get('macAddress')} for h in demisto.dt(vuln_hosts, 'iplist')]
 
 
         cves = None
@@ -1134,38 +1109,38 @@ script:
                 }, cves)
 
         mapped_vuln =  {
-            'ID': vuln['id'],
-            'Name': vuln['name'],
-            'Description': vuln['description'],
-            'Type': vuln['type'],
+            'ID': vuln.get('id'),
+            'Name': vuln.get('name'),
+            'Description': vuln.get('description'),
+            'Type': vuln.get('type'),
             'Severity': severity,
-            'Synopsis': vuln['synopsis'],
-            'Solution': vuln['solution'],
+            'Synopsis': vuln.get('synopsis'),
+            'Solution': vuln.get('solution'),
 
         }
 
         vuln_info = {
-            'Published': datetime.utcfromtimestamp(int(vuln['vulnPubDate'])).strftime('%Y-%m-%dT%H:%M:%SZ') if vuln['vulnPubDate'] else '',
+            'Published': datetime.utcfromtimestamp(int(vuln['vulnPubDate'])).strftime('%Y-%m-%dT%H:%M:%SZ') if vuln.get('vulnPubDate') else '',
             'CPE': vuln['cpe'],
             'CVE': cves
         }
 
         exploit_info = {
-            'ExploitAvailable': vuln['exploitAvailable'],
-            'ExploitEase': vuln['exploitEase']
+            'ExploitAvailable': vuln.get('exploitAvailable'),
+            'ExploitEase': vuln.get('exploitEase')
         }
 
         risk_info = {
-            'RiskFactor': vuln['riskFactor'],
-            'CVSSBaseScore': vuln['baseScore'],
-            'CVSSTemporalScore': vuln['temporalScore'],
-            'CVSSVector': vuln['cvssVector']
+            'RiskFactor': vuln.get('riskFactor'),
+            'CVSSBaseScore': vuln.get('baseScore'),
+            'CVSSTemporalScore': vuln.get('temporalScore'),
+            'CVSSVector': vuln.get('cvssVector')
         }
 
         plugin_details = {
             'Family': vuln['family'].get('name'),
-            'Published': datetime.utcfromtimestamp(int(vuln['pluginPubDate'])).strftime('%Y-%m-%dT%H:%M:%SZ') if vuln['pluginPubDate'] else '',
-            'Modified': datetime.utcfromtimestamp(int(vuln['pluginModDate'])).strftime('%Y-%m-%dT%H:%M:%SZ') if vuln['pluginModDate'] else '',
+            'Published': datetime.utcfromtimestamp(int(vuln['pluginPubDate'])).strftime('%Y-%m-%dT%H:%M:%SZ') if vuln.get('pluginPubDate') else '',
+            'Modified': datetime.utcfromtimestamp(int(vuln['pluginModDate'])).strftime('%Y-%m-%dT%H:%M:%SZ') if vuln.get('pluginModDate') else '',
             'CheckType': vuln['checkType']
         }
 
@@ -1300,26 +1275,10 @@ script:
 
         device = res['response']
 
-        headers = [
-            'IP',
-            'UUID',
-            'MacAddress',
-            'RepositoryID',
-            'RepositoryName',
-            'NetbiosName',
-            'DNSName',
-            'OS',
-            'OsCPE',
-            'LastScan',
-            'TotalScore',
-            'LowSeverity',
-            'MediumSeverity',
-            'HighSeverity',
-            'CriticalSeverity'
-        ]
+        headers = ['IP','UUID','MacAddress','RepositoryID','RepositoryName','NetbiosName','DNSName','OS','OsCPE','LastScan','TotalScore','LowSeverity','MediumSeverity','HighSeverity','CriticalSeverity']
 
         mapped_device = {
-            'IP': device['ip'],
+            'IP': device.get('ip'),
             'UUID': device.get('uuid'),
             'MacAddress': device.get('macAddress'),
             'RepositoryID': device.get('repository', {}).get('id'),
@@ -1396,30 +1355,19 @@ script:
         if len(users) == 0:
             return_message('No users found')
 
-        headers = [
-            'ID',
-            'Username',
-            'Firstname',
-            'Lastname',
-            'Title',
-            'Email',
-            'Created',
-            'Modified',
-            'LastLogin',
-            'Role'
-        ]
+        headers = ['ID','Username','Firstname','Lastname','Title','Email','Created','Modified','LastLogin','Role']
 
         mapped_users = [{
-            'ID': u['id'],
-            'Username': u['username'],
-            'FirstName': u['firstname'],
-            'LastName': u['lastname'],
-            'Title': u['title'],
-            'Email': u['email'],
-            'Created': datetime.utcfromtimestamp(int(u['createdTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if u['createdTime'] else '',
-            'Modified': datetime.utcfromtimestamp(int(u['modifiedTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if u['modifiedTime'] else '',
-            'LastLogin': datetime.utcfromtimestamp(int(u['lastLogin'])).strftime('%Y-%m-%dT%H:%M:%SZ') if u['lastLogin'] else '',
-            'Role': u['role'].get('name')
+            'ID': u.get('id'),
+            'Username': u.get('username'),
+            'FirstName': u.get('firstname'),
+            'LastName': u.get('lastname'),
+            'Title': u.get('title'),
+            'Email': u.get('email'),
+            'Created': datetime.utcfromtimestamp(int(u['createdTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if u.get('createdTime') else '',
+            'Modified': datetime.utcfromtimestamp(int(u['modifiedTime'])).strftime('%Y-%m-%dT%H:%M:%SZ') if u.get('modifiedTime') else '',
+            'LastLogin': datetime.utcfromtimestamp(int(u['lastLogin'])).strftime('%Y-%m-%dT%H:%M:%SZ') if u.get('lastLogin') else '',
+            'Role': u.get('role', {}).get('name')
         } for u in users]
 
         demisto.results({
@@ -1458,9 +1406,9 @@ script:
         status = res['response']
 
         mapped_licensing = {
-            'License': status['licenseStatus'],
-            'LicensedIPS': status['licensedIPs'],
-            'ActiveIPS': status['activeIPs']
+            'License': status.get('licenseStatus'),
+            'LicensedIPS': status.get('licensedIPs'),
+            'ActiveIPS': status.get('activeIPs')
         }
 
         headers = [
@@ -1504,28 +1452,18 @@ script:
         system = sys_res['response']
 
         mapped_information = {
-            'Version': system['version'],
-            'BuildID': system['buildID'],
-            'ReleaseID': system['releaseID'],
-            'License': system['licenseStatus'],
-            'RPMStatus': diagnostics['statusRPM'],
-            'JavaStatus': diagnostics['statusJava'],
-            'DiskStatus': diagnostics['statusDisk'],
-            'DiskThreshold': diagnostics['statusThresholdDisk'],
-            'LastCheck': datetime.utcfromtimestamp(int(diagnostics['statusLastChecked'])).strftime('%Y-%m-%dT%H:%M:%SZ') if diagnostics['statusLastChecked'] else '',
+            'Version': system.get('version'),
+            'BuildID': system.get('buildID'),
+            'ReleaseID': system.get('releaseID'),
+            'License': system.get('licenseStatus'),
+            'RPMStatus': diagnostics.get('statusRPM'),
+            'JavaStatus': diagnostics.get('statusJava'),
+            'DiskStatus': diagnostics.get('statusDisk'),
+            'DiskThreshold': diagnostics.get('statusThresholdDisk'),
+            'LastCheck': datetime.utcfromtimestamp(int(diagnostics['statusLastChecked'])).strftime('%Y-%m-%dT%H:%M:%SZ') if diagnostics.get('statusLastChecked') else '',
         }
 
-        headers = [
-            'Version',
-            'BuildID',
-            'ReleaseID',
-            'License',
-            'RPMStatus',
-            'JavaStatus',
-            'DiskStatus',
-            'DiskThreshold',
-            'LastCheck'
-        ]
+        headers = ['Version','BuildID','ReleaseID','License','RPMStatus','JavaStatus','DiskStatus','DiskThreshold','LastCheck']
 
         demisto.results({
             'Type': entryTypes['note'],
@@ -1564,14 +1502,14 @@ script:
 
         headers = ['ID','Name','Actions','State','LastTriggered','LastEvaluated','Group','Owner']
         mapped_alerts = [{
-            'ID': a['id'],
-            'Name': a['name'],
-            'State': 'Triggered' if a['didTriggerLastEvaluation'] == 'true' else 'Not Triggered',
-            'Actions': demisto.dt(a['action'], 'type'),
-            'LastTriggered': datetime.utcfromtimestamp(int(a['lastTriggered'])).strftime('%Y-%m-%dT%H:%M:%SZ') if a['lastTriggered'] and int(a['lastTriggered']) > 0 else 'Never',
-            'LastEvaluated': datetime.utcfromtimestamp(int(a['lastEvaluated'])).strftime('%Y-%m-%dT%H:%M:%SZ') if a['lastEvaluated'] else '',
-            'Group': a['ownerGroup'].get('name'),
-            'Owner': a['owner'].get('username')
+            'ID': a.get('id'),
+            'Name': a.get('name'),
+            'State': 'Triggered' if a.get('didTriggerLastEvaluation', '') == 'true' else 'Not Triggered',
+            'Actions': demisto.dt(a.get('action', {}), 'type'),
+            'LastTriggered': datetime.utcfromtimestamp(int(a['lastTriggered'])).strftime('%Y-%m-%dT%H:%M:%SZ') if a.get('lastTriggered') and int(a['lastTriggered']) > 0 else 'Never',
+            'LastEvaluated': datetime.utcfromtimestamp(int(a['lastEvaluated'])).strftime('%Y-%m-%dT%H:%M:%SZ') if a.get('lastEvaluated') else '',
+            'Group': a.get('ownerGroup', {}).get('name'),
+            'Owner': a.get('owner', {}).get('username')
         } for a in alerts]
 
         demisto.results({
@@ -1605,30 +1543,30 @@ script:
 
         filter_headers = ['Name','Values']
         mapped_alert = {
-            'ID': alert['id'],
-            'Name': alert['name'],
-            'Description': alert['description'],
-            'LastTriggered': datetime.utcfromtimestamp(int(alert['lastTriggered'])).strftime('%Y-%m-%dT%H:%M:%SZ') if alert['lastTriggered'] and int(alert['lastTriggered']) > 0 else 'Never',
-            'State': 'Triggered' if alert['didTriggerLastEvaluation'] == 'true' else 'Not Triggered',
-            'Behavior': 'Execute on every trigger ' if alert['executeOnEveryTrigger'] == 'true' else 'Execute only on first trigger'
+            'ID': alert.get('id'),
+            'Name': alert.get('name'),
+            'Description': alert.get('description'),
+            'LastTriggered': datetime.utcfromtimestamp(int(alert['lastTriggered'])).strftime('%Y-%m-%dT%H:%M:%SZ') if alert.get('lastTriggered') and int(alert['lastTriggered']) > 0 else 'Never',
+            'State': 'Triggered' if alert.get('didTriggerLastEvaluation', '') == 'true' else 'Not Triggered',
+            'Behavior': 'Execute on every trigger' if alert.get('executeOnEveryTrigger', '') == 'true' else 'Execute only on first trigger'
         }
 
         mapped_condition = {
-            'Trigger': '{} {} {}'.format(alert['triggerName'],alert['triggerOperator'],alert['triggerValue']),
-            'Query': alert['query'].get('name')
+            'Trigger': '{} {} {}'.format(alert.get('triggerName', ''), alert.get('triggerOperator', ''), alert.get('triggerValue', '')),
+            'Query': alert.get('query', {}).get('name')
         }
 
         mapped_filters = None
         if query:
             mapped_filters = [{
-                'Name': f['filterName'],
-                'Values': demisto.dt(f['value'], 'name') if isinstance(f['value'], list) else f['value']
+                'Name': f.get('filterName'),
+                'Values': demisto.dt(f.get('value', {}), 'name') if isinstance(f.get('value'), list) else f.get('value')
                 } for f in query.get('filters', [])]
             mapped_condition['Filter'] = mapped_filters
 
         mapped_actions = [{
-            'Type': a['type'],
-            'Values': demisto.dt(a, '{}.{}'.format('definition', ACTION_TYPE_TO_VALUE[a['type']]))
+            'Type': a.get('type'),
+            'Values': demisto.dt(a, '{}.{}'.format('definition', ACTION_TYPE_TO_VALUE[a.get('type', '')]))
         } for a in alert['action']]
 
         hr = tableToMarkdown('Tenable.sc Alert', mapped_alert, headers=alert_headers, removeNull=True)
@@ -1694,7 +1632,7 @@ script:
             # 0 corresponds to never triggered
             if int(alert.get('lastTriggered', 0)) > timestamp:
                 incidents.append({
-                    'name': 'Tenable.sc Alert Triggered - ' + alert['name'],
+                    'name': 'Tenable.sc Alert Triggered - ' + alert.get('name'),
                     'occurred': datetime.utcfromtimestamp(int(alert['lastTriggered'])).strftime('%Y-%m-%dT%H:%M:%SZ'),
                     'rawJSON': json.dumps(alert)
                 })
@@ -2547,5 +2485,6 @@ script:
       type: date
     description: Get the system information and diagnostics from Tenable.sc
   isfetch: true
+releaseNotes: "-"
 tests:
   - tenable-sc-test
