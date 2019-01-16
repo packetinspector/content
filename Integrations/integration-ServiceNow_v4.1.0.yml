@@ -3437,7 +3437,7 @@ script:
     description: Get table names by a label to use in commands
   isfetch: true
   runonce: false
-releaseNotes: "Ignore auto extract when not needed"
+releaseNotes: "-"
 tests:
   - No test - Hibernating instance
-fromversion: 4.5.0
+toversion: 4.5.0
